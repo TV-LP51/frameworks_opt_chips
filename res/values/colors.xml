@@ -17,13 +17,13 @@
 
 <resources>
 
-    <color name="chips_dropdown_background_activated">#4285f4</color>
+    <color name="chips_dropdown_background_activated">#009688</color>
     <color name="chips_dropdown_background_pressed">#ededed</color>
 
-    <color name="autocomplete_divider_color">#cccccc</color>
+    <color name="autocomplete_divider_color">#ffffff</color>
 
     <color name="chip_background">#40000000</color>
-    <color name="chip_background_selected">#4285f4</color>
+    <color name="chip_background_selected">#009688</color>
     <color name="chip_background_invalid">#db4437</color>
 
 </resources>
