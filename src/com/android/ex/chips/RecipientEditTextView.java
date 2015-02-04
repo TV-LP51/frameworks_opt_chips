@@ -47,6 +47,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Parcelable;
+import android.telephony.PhoneNumberUtils;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Layout;
@@ -99,6 +100,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -524,8 +526,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             return;
         }
         long contactId = mSelectedChip != null ? mSelectedChip.getEntry().getContactId() : -1;
-        if (mSelectedChip != null && contactId != RecipientEntry.INVALID_CONTACT
-                && (!isPhoneQuery() && contactId != RecipientEntry.GENERATED_CONTACT)) {
+        if (mSelectedChip != null && contactId != RecipientEntry.INVALID_CONTACT) {
             clearSelectedChip();
         } else {
             if (getWidth() <= 0) {
@@ -1252,12 +1253,17 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         return mValidator == null ? true : mValidator.isValid(text);
     }
 
-    private static String tokenizeAddress(String destination) {
-        Rfc822Token[] tokens = Rfc822Tokenizer.tokenize(destination);
-        if (tokens != null && tokens.length > 0) {
-            return tokens[0].getAddress();
+    private String tokenizeAddress(String destination) {
+        if (getAdapter().isPhoneQuery() && isPhoneNumber(destination)) {
+            return PhoneNumberUtils.formatNumberToE164(destination,
+                Locale.getDefault().getCountry());
+        } else {
+            Rfc822Token[] tokens = Rfc822Tokenizer.tokenize(destination);
+            if (tokens != null && tokens.length > 0) {
+                return tokens[0].getAddress();
+            }
+            return destination;
         }
-        return destination;
     }
 
     @Override
@@ -2261,6 +2267,9 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         }
         setCursorVisible(true);
         setSelection(editable.length());
+        if (mAddressPopup != null && mAddressPopup.isShowing()) {
+            mAddressPopup.dismiss();
+        }
         if (mAlternatesPopup != null && mAlternatesPopup.isShowing()) {
             mAlternatesPopup.dismiss();
         }
@@ -2834,16 +2843,19 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
                                         .getContactId())
                                         && getSpannable().getSpanStart(temp) != -1) {
                                     // Replace this.
-                                    final RecipientEntry entry = createValidatedEntry(entries
-                                            .get(tokenizeAddress(temp.getEntry().getDestination())
-                                                    .toLowerCase()));
-                                    if (entry != null) {
-                                        mHandler.post(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                replaceChip(temp, entry);
-                                            }
-                                        });
+                                    final String address = tokenizeAddress(
+                                            temp.getEntry().getDestination());
+                                    if (!TextUtils.isEmpty(address)) {
+                                        final RecipientEntry entry = createValidatedEntry(entries
+                                                .get(address.toLowerCase()));
+                                        if (entry != null) {
+                                            mHandler.post(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    replaceChip(temp, entry);
+                                                }
+                                            });
+                                        }
                                     }
                                 }
                             }
